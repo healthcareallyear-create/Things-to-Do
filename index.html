@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Priority To‑Do — Mobile</title>
+  <style>
+    :root{
+      --bg:#0b0f1a;
+      --panel:#0f172a;
+      --ink:#e5e7eb;
+      --muted:#97a3b6;
+      --line:rgba(148,163,184,.25);
+      --ring:0 0 0 3px rgba(59,130,246,.35);
+      --hi:#ef4444;   /* High */
+      --md:#f59e0b;   /* Medium */
+      --lo:#22c55e;   /* Low */
+      --brand:#06b6d4;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(800px 500px at 120% -10%, rgba(6,182,212,.14), transparent),
+        radial-gradient(900px 600px at -10% -20%, rgba(34,197,94,.10), transparent),
+        var(--bg);
+    }
+    header{ position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(8px);
+      background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(15,23,42,.6)); border-bottom:1px solid var(--line);
+      padding:12px 14px }
+    h1{ margin:0; font-size:20px; letter-spacing:.2px }
+    .sub{ font-size:12px; color:var(--muted) }
+
+    main{ max-width:720px; margin:0 auto; padding:14px }
+
+    /* Add form */
+    .add{ display:grid; gap:10px; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+          border:1px solid var(--line); border-radius:16px; padding:12px }
+    .row{ display:flex; gap:10px; align-items:center }
+    input[type=text], textarea, select, input[type=date]{
+      width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
+      border-radius:12px; padding:12px; outline:none; transition:.2s border-color,.2s box-shadow
+    }
+    textarea{ min-height:64px; resize:vertical }
+    select:focus, input:focus, textarea:focus{ box-shadow:var(--ring); border-color:#60a5fa }
+    .btn{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      background:linear-gradient(180deg, rgba(6,182,212,.9), rgba(6,182,212,.75)); color:#05242a; font-weight:700;
+      border:1px solid rgba(6,182,212,.6); border-radius:12px; padding:14px 16px; cursor:pointer }
+
+    /* Filters */
+    .filters{ display:grid; gap:10px; margin:12px 0 }
+    .tools{ display:flex; gap:8px; flex-wrap:wrap }
+    .ghost{ background:transparent; color:var(--muted); border:1px dashed var(--line); padding:12px 14px; border-radius:12px; cursor:pointer }
+    .alt{ background:linear-gradient(180deg, rgba(34,197,94,.9), rgba(34,197,94,.75)); color:#072a1a; border:1px solid rgba(34,197,94,.6) }
+
+    /* List */
+    .list{ display:grid; gap:10px }
+    .card{ background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+           border:1px solid var(--line); border-radius:16px; padding:10px }
+    .item{ display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:12px }
+    .toggle{ width:22px; height:22px; accent-color: var(--lo); margin-top:2px }
+    .title{ font-weight:700; line-height:1.25; font-size:16px }
+    .strike{ text-decoration: line-through; color:#9aa8bb }
+    .meta{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px }
+    .chip{ font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--line) }
+    .chip.hi{ background:rgba(239,68,68,.18); color:#fecaca; border-color:rgba(239,68,68,.35) }
+    .chip.md{ background:rgba(245,158,11,.16); color:#fde68a; border-color:rgba(245,158,11,.32) }
+    .chip.lo{ background:rgba(34,197,94,.16); color:#bbf7d0; border-color:rgba(34,197,94,.32) }
+    .chip.due{ color:#facc15 }
+    .note{ color:var(--muted); margin-top:6px; white-space:pre-wrap }
+    .icon{ background:transparent; color:var(--muted); border:1px solid var(--line); padding:10px; border-radius:12px; cursor:pointer }
+    .empty{ text-align:center; color:var(--muted); padding:16px }
+
+    .footer{ color:var(--muted); font-size:12px; text-align:center; padding:18px 0 }
+
+    /* Larger screens enhance layout */
+    @media (min-width: 720px){
+      .add{ grid-template-columns: 1fr }
+      .filters{ grid-template-columns: repeat(4, 1fr) }
+      .tools{ justify-content:flex-end }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Things to Do</h1>
+    <div class="sub">Mobile‑first to‑do list with priorities & due dates. Autosaves locally.</div>
+  </header>
+
+  <main>
+    <!-- Add Task -->
+    <section class="add" aria-labelledby="addHeading">
+      <h2 id="addHeading" style="margin:0; font-size:14px; color:var(--muted)">Add a task</h2>
+      <input id="title" type="text" placeholder="Title (tap Enter to add)" inputmode="text" autocapitalize="sentences"/>
+      <textarea id="notes" placeholder="Notes (optional)"></textarea>
+      <div class="row">
+        <select id="priority" aria-label="Priority">
+          <option value="High">High priority</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <input id="due" type="date" aria-label="Due date" />
+      </div>
+      <button id="addBtn" class="btn" aria-label="Add task">➕ Add Task</button>
+    </section>
+
+    <!-- Filters & Tools -->
+    <section class="filters">
+      <select id="filterPriority" aria-label="Filter by priority">
+        <option value="All">All priorities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <select id="filterStatus" aria-label="Filter by status">
+        <option value="active">Active</option>
+        <option value="all">All</option>
+        <option value="done">Completed</option>
+      </select>
+      <select id="sortBy" aria-label="Sort tasks">
+        <option value="priority">Sort: Priority</option>
+        <option value="due">Sort: Due date</option>
+        <option value="created">Sort: Created</option>
+        <option value="title">Sort: Title</option>
+      </select>
+      <input id="search" type="text" placeholder="Search" aria-label="Search tasks" />
+    </section>
+
+    <section class="tools">
+      <button id="exportBtn" class="ghost">Export</button>
+      <button id="importBtn" class="ghost">Import</button>
+      <input id="fileInput" type="file" accept="application/json" hidden />
+      <button id="clearDoneBtn" class="ghost">Clear done</button>
+      <button id="clearAllBtn" class="ghost">Clear all</button>
+    </section>
+
+    <!-- List -->
+    <section id="list" class="list" aria-live="polite"></section>
+
+    <div class="footer">Tip: Long‑press to edit. Everything saves to your device.</div>
+  </main>
+
+  <template id="itemTemplate">
+    <div class="card" draggable="true">
+      <div class="item">
+        <input class="toggle" type="checkbox" aria-label="Mark complete" />
+        <div>
+          <div class="title"></div>
+          <div class="meta"></div>
+          <div class="note"></div>
+        </div>
+        <div class="row">
+          <button class="icon edit" title="Edit">✏️</button>
+          <button class="icon del" title="Delete">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+  (function(){
+    const $ = s=>document.querySelector(s);
+    const store='todo.mobile.v1';
+    const state={ items:[], filterPriority:'All', filterStatus:'active', sortBy:'priority', search:'' };
+
+    // Load saved
+    try{ const saved=JSON.parse(localStorage.getItem(store)||'null'); if(saved&&Array.isArray(saved.items)) Object.assign(state,saved);}catch{}
+
+    // Elements
+    const title=$('#title'), notes=$('#notes'), priority=$('#priority'), due=$('#due'), addBtn=$('#addBtn');
+    const filterPriority=$('#filterPriority'), filterStatus=$('#filterStatus'), sortBy=$('#sortBy'), search=$('#search');
+    const list=$('#list');
+    const exportBtn=$('#exportBtn'), importBtn=$('#importBtn'), fileInput=$('#fileInput'), clearDoneBtn=$('#clearDoneBtn'), clearAllBtn=$('#clearAllBtn');
+
+    function save(){ localStorage.setItem(store, JSON.stringify(state)); }
+    function uid(){ return Math.random().toString(36).slice(2,10) }
+
+    function addItem(){
+      const t=title.value.trim(); if(!t){ title.focus(); return; }
+      state.items.push({ id:uid(), title:t, notes:notes.value.trim(), priority:priority.value, due:due.value||'', done:false, createdAt:Date.now() });
+      title.value=''; notes.value=''; due.value=''; priority.value='Medium';
+      render();
+    }
+
+    function chipPriority(p){ const span=document.createElement('span'); span.className='chip '+(p==='High'?'hi':p==='Medium'?'md':'lo'); span.textContent=p; return span; }
+    function formatDate(iso){ if(!iso) return ''; const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+
+    function sortItems(items){
+      const coll=new Intl.Collator(undefined,{sensitivity:'base'});
+      const order={High:0,Medium:1,Low:2};
+      switch(state.sortBy){
+        case 'priority': return items.sort((a,b)=> (order[a.priority]-order[b.priority]) || a.createdAt-b.createdAt);
+        case 'due': return items.sort((a,b)=> (a.due?new Date(a.due):Infinity) - (b.due?new Date(b.due):Infinity));
+        case 'created': return items.sort((a,b)=> a.createdAt-b.createdAt);
+        case 'title': return items.sort((a,b)=> coll.compare(a.title,b.title));
+        default: return items;
+      }
+    }
+
+    function render(){
+      // persist UI settings
+      state.filterPriority=filterPriority.value; state.filterStatus=filterStatus.value; state.sortBy=sortBy.value; state.search=search.value.trim().toLowerCase(); save();
+      list.innerHTML='';
+      let items=state.items.slice();
+      if(state.filterPriority!=='All') items=items.filter(i=>i.priority===state.filterPriority);
+      if(state.filterStatus==='active') items=items.filter(i=>!i.done); else if(state.filterStatus==='done') items=items.filter(i=>i.done);
+      if(state.search) items=items.filter(i=> (i.title+"\n"+i.notes).toLowerCase().includes(state.search));
+      items=sortItems(items);
+
+      if(items.length===0){ const d=document.createElement('div'); d.className='card empty'; d.textContent='No tasks'; list.appendChild(d); return; }
+
+      for(const it of items){
+        const node=document.getElementById('itemTemplate').content.firstElementChild.cloneNode(true);
+        node.dataset.id=it.id;
+        const chk=node.querySelector('.toggle'); const titleEl=node.querySelector('.title'); const meta=node.querySelector('.meta'); const note=node.querySelector('.note');
+        const editBtn=node.querySelector('.edit'); const delBtn=node.querySelector('.del');
+
+        chk.checked=it.done; titleEl.textContent=it.title; if(it.done) titleEl.classList.add('strike');
+        meta.appendChild(chipPriority(it.priority));
+        if(it.due){ const d=document.createElement('span'); d.className='chip due'; d.textContent='⏰ '+formatDate(it.due); meta.appendChild(d); }
+        if(it.notes) note.textContent=it.notes;
+
+        // events
+        chk.addEventListener('change',()=>{ it.done=chk.checked; save(); render(); });
+        delBtn.addEventListener('click',()=>{ if(confirm('Delete this task?')){ state.items=state.items.filter(x=>x.id!==it.id); render(); }});
+
+        // Mobile-friendly edit: long-press or button
+        let pressTimer; node.addEventListener('touchstart',()=>{ pressTimer=setTimeout(()=> openEditor(it), 450); },{passive:true});
+        node.addEventListener('touchend',()=> clearTimeout(pressTimer));
+        editBtn.addEventListener('click',()=> openEditor(it));
+
+        // basic drag order
+        node.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain', it.id); });
+        list.addEventListener('dragover',e=>e.preventDefault());
+        list.addEventListener('drop',e=>{ e.preventDefault(); const fromId=e.dataTransfer.getData('text/plain'); const toCard=e.target.closest('.card'); if(!toCard) return; const toId=toCard.dataset.id; const fromIdx=state.items.findIndex(x=>x.id===fromId); const toIdx=state.items.findIndex(x=>x.id===toId); if(fromIdx<0||toIdx<0||fromIdx===toIdx) return; const [m]=state.items.splice(fromIdx,1); state.items.splice(toIdx,0,m); render(); },{once:true});
+
+        list.appendChild(node);
+      }
+    }
+
+    function openEditor(it){
+      const t=prompt('Edit title', it.title); if(t===null) return; it.title=t.trim()||it.title;
+      const n=prompt('Edit notes', it.notes||''); if(n!==null) it.notes=n.trim();
+      const p=prompt('Priority (High, Medium, Low)', it.priority); if(p && ['high','medium','low','High','Medium','Low'].includes(p)) it.priority=cap(p);
+      const d=prompt('Due date (YYYY-MM-DD)', it.due); if(d===null){} else if(d===''){ it.due=''; } else if(/^\d{4}-\d{2}-\d{2}$/.test(d)) { it.due=d; }
+      save(); render();
+    }
+
+    function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase(); }
+
+    // wire up
+    addBtn.addEventListener('click', addItem);
+    title.addEventListener('keydown',e=>{ if(e.key==='Enter') addItem(); });
+    notes.addEventListener('keydown',e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) addItem(); });
+    filterPriority.addEventListener('change', render);
+    filterStatus.addEventListener('change', render);
+    sortBy.addEventListener('change', render);
+    search.addEventListener('input', render);
+
+    clearDoneBtn.addEventListener('click',()=>{ if(confirm('Clear all completed?')){ state.items=state.items.filter(i=>!i.done); render(); }});
+    clearAllBtn.addEventListener('click',()=>{ if(confirm('Clear EVERYTHING?')){ state.items=[]; render(); }});
+
+    exportBtn.addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({items:state.items},null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='todo-mobile.json'; a.click(); URL.revokeObjectURL(url); });
+    importBtn.addEventListener('click',()=> fileInput.click());
+    fileInput.addEventListener('change', async ()=>{ const f=fileInput.files[0]; if(!f) return; try{ const text=await f.text(); const data=JSON.parse(text); if(!data||!Array.isArray(data.items)) throw new Error('Invalid file'); state.items=data.items; render(); }catch(err){ alert('Could not import: '+err.message); } finally{ fileInput.value=''; }});
+
+    // init controls
+    $('#filterPriority').value=state.filterPriority; $('#filterStatus').value=state.filterStatus; $('#sortBy').value=state.sortBy; $('#search').value=state.search;
+    render();
+  })();
+  </script>
+</body>
+</html>
